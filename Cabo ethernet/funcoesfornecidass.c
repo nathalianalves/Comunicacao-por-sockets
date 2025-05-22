@@ -10,6 +10,8 @@
 #include <net/ethernet.h>
 #include <netpacket/packet.h>
 #include <netinet/ether.h>
+
+
  
 int cria_raw_socket(char* nome_interface_rede) {
     // Cria arquivo para o socket sem qualquer protocolo
