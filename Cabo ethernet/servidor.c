@@ -129,7 +129,9 @@ int main() {
                         else if (jogo->jogador_y >7 ) jogo->jogador_y = 7;
                         else if (jogo->jogador_x <0) jogo->jogador_x = 0;
                         else if (jogo->jogador_x > 7) jogo->jogador_x = 7;
-                        envia_nack(sock, mac_origem, f);
+                        envia_nack(sock, jogo, f); 
+                        // linha comentada é a correta, mas precisa de ajustes para funcionar
+                        // envia_tabuleiro(sock, jogo);
                     }
                     else if (jogo->tabuleiro[jogo->jogador_x][jogo->jogador_y] == TESOURO){
                         char* mensagem = "Você achou um tesouro!";

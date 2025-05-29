@@ -86,26 +86,4 @@ void imprimir_tabuleiro(const Jogo* jogo) {
     printf("     0   1   2   3   4   5   6   7\n");
 }
 
-/*
-int main() {
-    srand(time(NULL));
-    
-    Jogo* jogo = criar_jogo();
-    if (!jogo) {
-        fprintf(stderr, "Erro ao alocar memória!\n");
-        return 1;
-    }
 
-    inicializar_tabuleiro(jogo);
-    imprimir_tabuleiro(jogo);
-
-    // Exemplo de modificação
-    jogo->tabuleiro[3][4] = VISITADO;
-    jogo->jogador_x = 2;
-    jogo->jogador_y = 5;
-    imprimir_tabuleiro(jogo);
-
-    destruir_jogo(jogo);
-    return 0;
-}
-*/
