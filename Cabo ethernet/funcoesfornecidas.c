@@ -10,8 +10,6 @@
 #include <net/ethernet.h>
 #include <netpacket/packet.h>
 #include <netinet/ether.h>
-
-
  
 int cria_raw_socket(char* nome_interface_rede) {
     // Cria arquivo para o socket sem qualquer protocolo
@@ -54,10 +52,23 @@ long long timestamp() {
     return tp.tv_sec*1000 + tp.tv_usec/1000;
 }
  
+
 int protocolo_e_valido(char* buffer, int tamanho_buffer) {
-    if (tamanho_buffer <= 0) { return 0; }
-    // insira a sua validação de protocolo aqui
-    return buffer[0] == 0x7f;
+    if (tamanho_buffer < 5) return 0; // tamanho mínimo de um frame
+
+    unsigned char marcador = buffer[0];
+    unsigned char tamanho_dados = buffer[1];
+
+    // Verifica se marcador está correto
+    if (marcador != 0x7E) return 0;
+
+    // Verifica se tamanho de dados é aceitável (0 a 127)
+    if (tamanho_dados > 127) return 0;
+
+    // Verifica se o buffer tem o tamanho mínimo exigido pelo frame
+    if (tamanho_buffer < (5 + tamanho_dados)) return 0;
+
+    return 1; // Tudo certo
 }
  
 // retorna -1 se deu timeout, ou quantidade de bytes lidos

@@ -2,19 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #define TAM 8
-
-typedef enum {
-    VAZIO,
-    TESOURO,
-    VISITADO,
-    JOGADOR
-} Estado;
-
-typedef struct {
-    Estado** tabuleiro;
-    int jogador_x;
-    int jogador_y;
-} Jogo;
+#include "tabuleiroservidor.h"
 
 // Cria e inicializa a estrutura do jogo
 Jogo* criar_jogo() {
@@ -98,6 +86,7 @@ void imprimir_tabuleiro(const Jogo* jogo) {
     printf("     0   1   2   3   4   5   6   7\n");
 }
 
+/*
 int main() {
     srand(time(NULL));
     
@@ -119,3 +108,4 @@ int main() {
     destruir_jogo(jogo);
     return 0;
 }
+*/

@@ -24,7 +24,8 @@ enum TipoMensagem {
     TIPO_BAIXO = 12,
     TIPO_ESQUERDA = 13,
     TIPO_LIVRE2 = 14,
-    TIPO_ERRO = 15
+    TIPO_ERRO = 15,
+    TIPO_TABULEIRO =16
 };
 
 // Frame do protocolo
