@@ -1,6 +1,6 @@
 // protocolo.h
-#ifndef PROTOCOLO_H
-#define PROTOCOLO_H
+#ifndef _PROTOCOLO_
+#define _PROTOCOLO_
 
 #include <stdint.h>
 
@@ -30,17 +30,22 @@ enum TipoMensagem {
 
 // Frame do protocolo
 typedef struct {
-    uint8_t marcador;            // 8 bits
-    uint8_t tamanho;             // 7 bits (use inteiro de 8 bits)
-    uint8_t sequencia;           // 5 bits (use inteiro de 8 bits)
-    uint8_t tipo;                // 4 bits (use inteiro de 8 bits)
-    uint8_t checksum;            // 8 bits
-    uint8_t dados[TAM_MAX_DADOS]; // até 127 bytes
+    unsigned char marcador;      // marcador de inicio
+    unsigned char tamanho : 7;   // 7 bits para tamanho 
+    unsigned char sequencia : 5; // 5 bits para sequencialização
+    unsigned char tipo : 4;      // 4 bits para tipo
+    unsigned char checksum;      // 8 bits
+    unsigned char dados[];       // até 127 bytes
 } Frame;
 
 // Funções
+// Cria um frame válido com os dados passados por parâmetro
 Frame empacotar(uint8_t tipo, uint8_t sequencia, uint8_t* dados, uint8_t tamanho);
+
+// Lê dados crus do buffer e preenche um frame. Retorna 0 para sucesso, -1 para erro.
 int desempacotar(Frame* f, const uint8_t* buffer, int buflen);
+
+// Calcula o checksum dos campos tamanho, sequencia, tipo e dados
 uint8_t calcular_checksum(const Frame* f);
 
 #endif

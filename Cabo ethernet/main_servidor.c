@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "protocolo.h"
-#include "tabuleiroservidor.h"
+#include "tabuleiro_servidor.h"
 #include "funcoesfornecidass.h"
 
 // Retorna vetor de 64 bytes representando o tabuleiro

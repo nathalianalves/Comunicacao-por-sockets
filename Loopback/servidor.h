@@ -1,30 +1,61 @@
-/* Biblioteca de funções relacionadas ao servidor da caça ao tesouro
-*
-* Explicação de estruturas:
-* - Grid: mapa do jogo, representado por uma matriz
-* - Tesouros: as posições dos tesouros são sorteadas e armazenadas fora do grid principal, em uma matriz com duas colunas na qual matriz[i][0] e matriz[i][1] são, respectivamente, a linha e a coluna do tesouro i no grid */
-
 #ifndef _SERVIDOR_
 #define _SERVIDOR_
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <stdint.h>
+#include <sys/stat.h>
+#include "tabuleiro.h"
+#include "protocolo.h"
 
-#define LINHAS_GRID 8
-#define COLUNAS_GRID 8
-#define NUM_TESOUROS 8
+#define TESOURO_1 "objetos/5.jpg"
+#define TESOURO_2 "objetos/2.txt"
+#define TESOURO_3 "objetos/3.txt"
+#define TESOURO_4 "objetos/4.txt"
+#define TESOURO_5 "objetos/5.txt"
+#define TESOURO_6 "objetos/6.txt"
+#define TESOURO_7 "objetos/7.txt"
+#define TESOURO_8 "objetos/8.txt"
 
-// Inicializa o grid usado como mapa no jogo
-int **inicializaGrid();
+typedef struct {
+    uint8_t tabuleiro[TAM_TABULEIRO * TAM_TABULEIRO];  
+    uint8_t tesouros[NUM_TESOUROS];
+    int jogador_linha;  
+    int jogador_coluna; 
+} Jogo;
 
-// Apaga o grid usado como mapa no jogo
-void desalocaGrid(int **grid);
+// Cria e inicializa a estrutura do jogo
+Jogo* criar_jogo();
 
-// Sorteia as posições dos tesouros do jogo
-int** sorteiaTesouros();
+// Libera a memória alocada
+void destruir_jogo(Jogo* jogo);
 
-// Desaloca a matriz que armazena a posição dos tesouros
-void desalocaTesouros(int** tesouros);
+// Transforma todos os campos TESOURO em VAZIO 
+void esconder_tesouros(Jogo* jogo, uint8_t* dados_tabuleiro);
+
+// Verifica se o movimento pode ser feito. 
+// Uso do parâmetro movimento:
+//  - Se 0, verifica movimento para direita
+//  - Se 1, verifica movimento para cima
+//  - Se 2, verifica movimento para baixo
+//  - Se 3, verifica movimento para esquerda
+// Retorno: 1 se é possivel fazer o movimento, 0 caso contrario
+int verificar_movimentacao(Jogo* jogo, int movimento);
+
+// Efetua o movimento passado como parâmetro
+// Uso do parâmetro movimento:
+//  - Se 0, efetua movimento para direita
+//  - Se 1, efetua movimento para cima
+//  - Se 2, efetua movimento para baixo
+//  - Se 3, efetua movimento para esquerda
+void efetuar_movimentacao(Jogo* jogo, int movimento, int* tesouro_encontrado);
+
+// Zera o vetor dados
+void zerar_dados(uint8_t* dados, int tamanho_dados);
+
+// Retorno: nome do tesouro com numero num_tesouro+1
+void obter_nome_tesouro(int num_tesouro, char* nome_tesouro);
+
+// Retorno: frame tamanho com atributos do tesouro num_tesouro
+Frame criar_frame_tamanho(int num_tesouro, char* nome_tesouro, uint32_t* tamanho_tesouro);
 
 #endif

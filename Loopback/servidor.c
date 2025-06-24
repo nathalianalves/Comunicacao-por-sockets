@@ -1,86 +1,204 @@
 #include "servidor.h"
 
-/*------------------------------ FUNÇÕES AUXILIARES ------------------------------*/
-// Aloca uma matriz linhas x colunas
-int** alocaMatriz(int linhas, int colunas) {
-	int** matriz;
+/* ----------------------- FUNÇÕES AUXILIARES ----------------------- */
 
-	matriz = (int**)malloc(sizeof(int*)*linhas);
-	if (!matriz) {
-		printf("ERRO: malloc falhou.\n");
-		exit(-1);
-	}
+// Inicializa o tabuleiro do jogo, colocando todas as posições como vazias e sorteando tesouros
+void inicializar_tabuleiro(Jogo* jogo) {
+    // Inicializa todas as posições como vazias
+    for (int i = 0; i < TAM_TABULEIRO * TAM_TABULEIRO; i++) {
+        jogo->tabuleiro[i] = VAZIO;
+    }
 
-	for (int i = 0; i < linhas; i++) {
-		matriz[i] = (int*) malloc(sizeof(int) * colunas);
-		if (!matriz[i]) {
-			printf("ERRO: malloc falhou.\n");
-			exit(-1);
-		}
-	}
+    // Sorteia tesouros
+    int num_tesouros_sorteados = 0;
+    while (num_tesouros_sorteados < NUM_TESOUROS) {
+        int i = rand() % TAM_TABULEIRO;
+        int j = rand() % TAM_TABULEIRO;
+        if ((jogo->tabuleiro[i * TAM_TABULEIRO + j] == VAZIO) && (i != 0) && (j != 0)) {
+            jogo->tabuleiro[i * TAM_TABULEIRO + j] = TESOURO;
+            jogo->tesouros[num_tesouros_sorteados] = i * TAM_TABULEIRO + j;
+            num_tesouros_sorteados++;
+        }
+    }
 
-	return matriz;
+    jogo->tabuleiro[jogo->jogador_linha * TAM_TABULEIRO + jogo->jogador_coluna] = JOGADOR;
 }
 
-// Desaloca uma matriz 
-// Parâmetros:
-// - matriz: matriz desalocada
-// - linhas: número de linhas da matriz 
-void desalocaMatriz(int** matriz, int linhas) {
-	for (int i = 0; i < linhas; i++) {
-		free(matriz[i]);
-	}
-	free(matriz);
-}
-/*------------------------------ FIM DAS FUNÇÕES AUXILIARES ------------------------------*/
+/* ----------------------- FUNÇÕES DA BIBLIOTECA ----------------------- */
+// Cria e inicializa a estrutura do jogo
+Jogo* criar_jogo() {
+    // Aloca novo jogo
+    Jogo* novo_jogo = (Jogo*) malloc(sizeof(Jogo));
+    if (!novo_jogo) {
+        printf("[criar_jogo] Erro em malloc.\n");
+        return NULL;
+    }
 
-/*------------------------------ FUNÇÕES PRINCIPAIS ------------------------------*/
-// Inicializa o mapa do jogo 
-// Se grid[i][j]:
-// - é -1: jogador não passou por grid[i][j]
-// - é 0: jogador está em grid[i][j]
-// - é 1: jogador já passou por grid[i][j] e encontrou tesouro
-// - é 2: jogador já passou por grid[i][j] e não encontrou nada 
-int **inicializaGrid() {
-	int **grid;
+    // Posição do jogador
+    novo_jogo->jogador_linha = 0;
+    novo_jogo->jogador_coluna = 0;
 
-	grid = alocaMatriz(LINHAS_GRID, COLUNAS_GRID);
+    inicializar_tabuleiro(novo_jogo);
 
-	for (int i = 0; i < LINHAS_GRID; i++) {
-		for (int j = 0; j < COLUNAS_GRID; j++) {
-			grid[i][j] = -1;
-		}
-	}
-	grid[0][0] = 0;
-
-	return grid;
+    return novo_jogo;
 }
 
-// Apaga o grid usado como mapa no jogo
-void desalocaGrid(int **grid) {
-	desalocaMatriz(grid, LINHAS_GRID);
+// Libera a memória alocada
+void destruir_jogo(Jogo* jogo) {
+    if (!jogo) {
+        return;
+    }
+
+    free(jogo->tabuleiro);
+    free(jogo);
 }
 
-// Sorteia as posições dos tesouros do jogo
-int** sorteiaTesouros() {
-	int **tesouros;
-
-	/* A linha abaixo está comentada para facilitar testes, já que, com ela, as posições dos tesouros são mudam a cada execução*/
-	//srand(time(NULL));
-	
-	// Aloca a matriz de tesouros
-	tesouros = alocaMatriz(NUM_TESOUROS, 2);
-	
-	// Sorteia linha e coluna de cada um dos tesouros
-	for (int i = 0; i < NUM_TESOUROS; i++) {
-		tesouros[i][0] = rand() % LINHAS_GRID;
-		tesouros[i][1] = rand() % COLUNAS_GRID;
-	}
-
-	return tesouros;
+// Transforma todos os campos TESOURO em VAZIO 
+void esconder_tesouros(Jogo* jogo, uint8_t* dados_tabuleiro) {
+    for (int i = 0; i < TAM_TABULEIRO*TAM_TABULEIRO; i++) {
+        if (jogo->tabuleiro[i] == TESOURO) {
+            dados_tabuleiro[i] = VAZIO; 
+        } else {
+            dados_tabuleiro[i] = jogo->tabuleiro[i];
+        }
+    }
 }
 
-// Desaloca a matriz que armazena a posição dos tesouros
-void desalocaTesouros(int** tesouros) {
-	desalocaMatriz(tesouros, NUM_TESOUROS);
+// Verifica se o movimento pode ser feito. 
+// Retorno: 1 se é possivel fazer o movimento, 0 caso contrario
+int verificar_movimentacao(Jogo* jogo, int movimento) {
+    switch(movimento) {
+        // Direita
+        case 0:
+            if (jogo->jogador_coluna + 1 >= TAM_TABULEIRO) {
+                return 0;
+            }
+            return 1;
+            break;
+        
+        // Cima
+        case 1:
+            if (jogo->jogador_linha + 1 >= TAM_TABULEIRO) {
+                return 0;
+            }
+            return 1;
+            break;
+        
+        // Baixo
+        case 2:
+            if (jogo->jogador_linha - 1 < 0) {
+                return 0;
+            }
+            return 1;
+            break;
+
+        // Esquerda
+        case 3: 
+            if (jogo->jogador_coluna - 1 < 0) {
+                return 0;
+            }
+            return 1;
+            break;
+    }
+
+    return -1;
+}
+
+// Efetua o movimento passado como parâmetro
+// Uso do parâmetro movimento:
+//  - Se 0, efetua movimento para direita
+//  - Se 1, efetua movimento para cima
+//  - Se 2, efetua movimento para baixo
+//  - Se 3, efetua movimento para esquerda
+void efetuar_movimentacao(Jogo* jogo, int movimento, int* tesouro_encontrado) {
+    (*tesouro_encontrado) = 0;
+
+    jogo->tabuleiro[jogo->jogador_linha * TAM_TABULEIRO + jogo->jogador_coluna] = VISITADO;
+    
+    switch (movimento) {
+        case 0:
+            jogo->jogador_coluna++;
+            break;
+
+        case 1:
+            jogo->jogador_linha++;
+            break;
+        
+        case 2:
+            jogo->jogador_linha--;
+            break;
+        
+        case 3: 
+            jogo->jogador_coluna--;
+            break;
+    }
+
+    if (jogo->tabuleiro[jogo->jogador_linha * TAM_TABULEIRO + jogo->jogador_coluna] == TESOURO) {
+        (*tesouro_encontrado) = 1;
+    }
+
+    jogo->tabuleiro[jogo->jogador_linha * TAM_TABULEIRO + jogo->jogador_coluna] = JOGADOR;
+}
+
+// Zera o vetor dados
+void zerar_dados(uint8_t* dados, int tamanho_dados) {
+    for (int i = 0; i < tamanho_dados; i++) {
+        dados[i] = 0;
+    }
+}
+
+void obter_nome_tesouro(int num_tesouro, char* nome_tesouro) {
+    switch(num_tesouro) {
+        case 1:
+            strncpy(nome_tesouro, TESOURO_1, TAM_MAX_DADOS);
+            break;
+
+        case 2:
+            strncpy(nome_tesouro, TESOURO_2, TAM_MAX_DADOS);
+            break;
+
+        case 3:
+            strncpy(nome_tesouro, TESOURO_3, TAM_MAX_DADOS);
+            break;
+
+        case 4:
+            strncpy(nome_tesouro, TESOURO_4, TAM_MAX_DADOS);
+            break;
+
+        case 5:
+            strncpy(nome_tesouro, TESOURO_5, TAM_MAX_DADOS);
+            break;
+
+        case 6:
+            strncpy(nome_tesouro, TESOURO_6, TAM_MAX_DADOS);
+            break;
+        
+        case 7:
+            strncpy(nome_tesouro, TESOURO_7, TAM_MAX_DADOS);
+            break;
+
+        case 8:
+            strncpy(nome_tesouro, TESOURO_8, TAM_MAX_DADOS);
+            break;
+    }
+}
+
+// Retorno: frame tamanho com atributos do tesouro num_tesouro
+Frame criar_frame_tamanho(int num_tesouro, char* nome_tesouro, uint32_t* tamanho_tesouro) {
+    uint8_t dados[4];  
+
+    obter_nome_tesouro(num_tesouro, nome_tesouro);
+
+    struct stat st;
+    if (stat(nome_tesouro, &st) != 0) {
+        perror("[criar_frame_tamanho] Erro no stat");
+        exit(-1);
+    }
+
+    *tamanho_tesouro = st.st_size;
+
+    uint32_t tamanho_para_frame = htonl(*tamanho_tesouro);
+    memcpy(dados, &tamanho_para_frame, sizeof(uint32_t));
+
+    return criar_frame(TIPO_TAMANHO, 0, dados, sizeof(uint32_t));
 }

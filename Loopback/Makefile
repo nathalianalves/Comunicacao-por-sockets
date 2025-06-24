@@ -1,28 +1,19 @@
 CC = gcc
-CFLAGS = -Wall -Wextra
-programaCliente = cliente 
-programaServidor = servidor
+CFLAGS = -Wall -Wextra -lm
+programa_cliente = cliente 
+programa_servidor = servidor
 
-all: $(programaCliente) $(programaServidor)
+all: $(programa_cliente) $(programa_servidor)
 
-#$(programaCliente): mainCliente.o cliente.o sockets.o
-#	$(CC) -o $(programaCliente) cliente.o sockets.o $(CFLAGS)
+$(programa_cliente): main_cliente.o sockets.o protocolo.o timestamp.o tabuleiro.o cliente.o
+	$(CC) -o $(programa_cliente) main_cliente.o sockets.o protocolo.o timestamp.o tabuleiro.o cliente.o $(CFLAGS)
 
-$(programaServidor): mainServidor.o servidor.o sockets.o
-	$(CC) -o $(programaServidor) mainServidor.o servidor.o sockets.o $(CFLAGS)
-
-mainServidor.o: mainServidor.c servidor.c sockets.c
-	gcc -c mainServidor.c servidor.c sockets.c $(CFLAGS)
-
-servidor.o: servidor.c
-	gcc -c servidor.c $(CFLAGS)
-
-sockets.o: sockets.c 
-	gcc -c sockets.c $(CFLAGS)
+$(programa_servidor): main_servidor.o sockets.o protocolo.o tabuleiro.o timestamp.o servidor.o
+	$(CC) -o $(programa_servidor) main_servidor.o sockets.o protocolo.o tabuleiro.o timestamp.o servidor.o $(CFLAGS)
 
 clean:
 	rm -f *.o *.gch
 
 purge:
 	make clean
-	rm -f $(programaCliente) $(programaServidor)
+	rm -f $(programa_cliente) $(programa_servidor)

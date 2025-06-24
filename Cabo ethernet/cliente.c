@@ -1,17 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include "protocolo.h"
-#include "tabuleiroservidor.h"
-#include "funcoesfornecidass.h"
+#include "cliente.h"
 
-
+// Imprime o tabuleiro do jogo
+// . se está vazio, X se já foi visitado, P se é a posição atual do jogador
 int mostra_tabuleiro (char* buffer, Frame f){
-
     printf("\nTABULEIRO INICIAL (sem tesouros):\n\n");
-    for (int i = TAM - 1; i >= 0; i--) {
-        for (int j = 0; j < TAM; j++) {
-            uint8_t valor = f.dados[i * TAM + j];
+    for (int i = TAM_TABULEIRO - 1; i >= 0; i--) {
+        for (int j = 0; j < TAM_TABULEIRO; j++) {
+            uint8_t valor = f.dados[i * TAM_TABULEIRO + j];
             switch (valor) {
                 case VAZIO:    printf(" . "); break;
                 case VISITADO: printf(" X "); break;
@@ -23,7 +18,7 @@ int mostra_tabuleiro (char* buffer, Frame f){
     }
 }
 
-
+// Envia o movimento solicitado pelo cliente para o servidor
 void envia_movimento(char teclaescolhida, Frame f, int sock, char mac_origem[18]){
     uint8_t tipo_movimento;
 
@@ -43,7 +38,7 @@ void envia_movimento(char teclaescolhida, Frame f, int sock, char mac_origem[18]
     printf("Movimento enviado (%d).\n", tipo_movimento);
 }
 
-
+// Envia ACK para servidor
 int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     uint8_t vazio[] = {0};
     Frame ack = empacotar(TIPO_ACK, f.sequencia, vazio, 0);
@@ -53,6 +48,7 @@ int confirma_que_recebeu(int sock, char mac_origem[18], Frame f){
     printf("ACK enviado para %s\n", mac_origem);
 }
 
+// Loop infinito para ler teclas e verificar validade
 char ler_tecla_valida() {
     char c;
     while (1) {
@@ -68,81 +64,3 @@ char ler_tecla_valida() {
         }
     }
 }
-
-
-
-int main() {
-    int sock = cria_raw_socket("enx00e04c2807e3");  // ajuste para sua interface
-    if (sock < 0) {
-        perror("Erro ao criar raw socket");
-        return 1;
-    }
-    
-    unsigned char buffer[sizeof(Frame)];
-    char mac_origem[18];
- 
-    while (1) {
-        int lidos = recebe(sock, buffer, mac_origem);
-        Frame f;
-        if ((lidos > 0)  && (protocolo_e_valido((char*)buffer, lidos))) {
-            if (desempacotar(&f, buffer, lidos) == 0) {
-                printf("Recebido tipo: %d de %s\n", f.tipo, mac_origem);
-                if (f.tipo != 0) confirma_que_recebeu(sock, mac_origem, f);
-                if (f.tipo == 16 ){
-                    mostra_tabuleiro(buffer, f);
-                    printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
-                    char teclaescolhida = ler_tecla_valida();
-                    envia_movimento(teclaescolhida, f, sock, mac_origem);
-                }
-                else if (f.tipo ==1){
-                    printf("Movimento para fora do mapa, tente novamente\n");
-                    mostra_tabuleiro(buffer, f);
-                    printf("Para andar no mapa pressione alguma das teclas: ⬆, ⬇, ⮕, ⬅ \n");
-                    char teclaescolhida = ler_tecla_valida();
-                    envia_movimento(teclaescolhida, f, sock, mac_origem);
-                }
-                else if (f.tipo == TIPO_TEXTO) {
-                    // Inicia montagem da mensagem
-                    char mensagem[1024] = {0};
-                    int pos = 0;
-
-                    // Copia o primeiro pedaço que já foi recebido
-                    if (f.tamanho + pos < sizeof(mensagem)) {
-                        memcpy(&mensagem[pos], f.dados, f.tamanho);
-                        pos += f.tamanho;
-                    }
-
-                    // Agora continua lendo até receber TIPO_FIM_ARQUIVO
-                    while (1) {
-                        int lidos2 = recebe(sock, buffer, mac_origem);
-                        Frame f2;
-
-                        if ((lidos2 > 0) && protocolo_e_valido((char*)buffer, lidos2)) {
-                            if (desempacotar(&f2, buffer, lidos2) == 0) {
-                                if (f2.tipo == TIPO_TEXTO) {
-                                    if (pos + f2.tamanho < sizeof(mensagem)) {
-                                        memcpy(&mensagem[pos], f2.dados, f2.tamanho);
-                                        pos += f2.tamanho;
-                                    }
-                                } else if (f2.tipo == TIPO_FIM_ARQUIVO) {
-                                    mensagem[pos] = '\0';
-                                    printf("\n Mensagem recebida:\n%s\n", mensagem);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-            }
-        else
-            printf("Erro ao desempacotar frame.\n");
-        }
-
-    }
-
-    return 0;
-}
-
-
-
