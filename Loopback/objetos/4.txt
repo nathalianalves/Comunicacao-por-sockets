@@ -1,1 +1,0 @@
-OIII. Agora eh um teste pra quando o arquivo tiver mais que 127 bytes e precisar ser enviado em blocos. Nao faz sentido a PORRA desse erro estar acontecendo e eu quero ir dormir logo. Mas so vou dormir se conseguir enviar ess PORRA. q nao ta indo agora. quero me matar de verdade.

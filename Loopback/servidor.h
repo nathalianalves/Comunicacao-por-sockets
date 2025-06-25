@@ -7,13 +7,13 @@
 #include "tabuleiro.h"
 #include "protocolo.h"
 
-#define TESOURO_1 "objetos/5.jpg"
+#define TESOURO_1 "objetos/1.mp4"
 #define TESOURO_2 "objetos/2.txt"
 #define TESOURO_3 "objetos/3.txt"
-#define TESOURO_4 "objetos/4.txt"
+#define TESOURO_4 "objetos/4.jpg"
 #define TESOURO_5 "objetos/5.txt"
-#define TESOURO_6 "objetos/6.txt"
-#define TESOURO_7 "objetos/7.txt"
+#define TESOURO_6 "objetos/6.jpg"
+#define TESOURO_7 "objetos/7.jpg"
 #define TESOURO_8 "objetos/8.txt"
 
 typedef struct {
@@ -53,9 +53,19 @@ void efetuar_movimentacao(Jogo* jogo, int movimento, int* tesouro_encontrado);
 void zerar_dados(uint8_t* dados, int tamanho_dados);
 
 // Retorno: nome do tesouro com numero num_tesouro+1
-void obter_nome_tesouro(int num_tesouro, char* nome_tesouro);
+void obter_caminho_tesouro(int num_tesouro, char* caminho_tesouro);
+
+// A partir do caminho do tesouro, extrai o nome do arquivo
+void obter_nome_tesouro(char* nome_tesouro, char* caminho_tesouro);
 
 // Retorno: frame tamanho com atributos do tesouro num_tesouro
 Frame criar_frame_tamanho(int num_tesouro, char* nome_tesouro, uint32_t* tamanho_tesouro);
+
+// Extrai o tipo de arquivo do tesouro
+// Retorno:
+//  - se nome_tesouro é um texto, retorna 0
+//  - se nome_tesouro é uma imagem, retorna 1
+//  - se nome_tesouro é um video, retorna 2
+int extrair_tipo_tesouro(char* nome_tesouro);
 
 #endif

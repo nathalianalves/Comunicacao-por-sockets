@@ -10,7 +10,6 @@
 #include "sockets.h"
 #include "protocolo.h"
 #include "tabuleiro.h"
-#include "funcoesfornecidass.h"
 
 // Loop infinito para ler teclas e verificar validade
 char ler_tecla_valida();
@@ -24,5 +23,7 @@ void extrair_nome_arquivo(Frame f, unsigned char* nome_arquivo);
 // Concatena as strings, gerando o caminho completo de nome_arquivo
 void gerar_caminho_completo(char* caminho_completo, char* caminho_diretorio, char* nome_arquivo);
 
+// Retorna, em tamanho, o tamanho do frame f
 void processar_frame_tamanho(Frame* f, uint32_t* tamanho);
+
 #endif

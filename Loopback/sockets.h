@@ -12,7 +12,6 @@
 #include <stdio.h>
 
 #include "timestamp.h"
-//#include "protocolo.h"
 
 typedef struct {
 	int socket_fd;

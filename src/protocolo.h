@@ -1,47 +1,66 @@
 // protocolo.h
-#ifndef PROTOCOLO_H
-#define PROTOCOLO_H
+#ifndef _PROTOCOLO_
+#define _PROTOCOLO_
 
+#include "sockets.h"
 #include <stdint.h>
 
 #define TAM_MAX_DADOS 127
-#define MARCADOR_INICIO 0x7E  // 0111 1110
+#define MARCADOR_INICIO 0x7E  
+#define TIMEOUT_MILI 5000
+#define TAM_CABECALHO 4
 
 // Tipos de mensagem
 enum TipoMensagem {
-    TIPO_ACK = 0,
-    TIPO_NACK = 1,
-    TIPO_OK_ACK = 2,
-    TIPO_LIVRE = 3,
-    TIPO_TAMANHO = 4,
-    TIPO_DADOS = 5,
-    TIPO_TEXTO = 6,
-    TIPO_VIDEO = 7,
-    TIPO_IMAGEM = 8,
-    TIPO_FIM_ARQUIVO = 9,
-    TIPO_DIREITA = 10,
-    TIPO_CIMA = 11,
-    TIPO_BAIXO = 12,
-    TIPO_ESQUERDA = 13,
-    TIPO_LIVRE2 = 14,
-    TIPO_ERRO = 15
+    TIPO_ACK,
+    TIPO_NACK,
+    TIPO_OK_ACK,
+    TIPO_TABULEIRO,
+    TIPO_TAMANHO,
+    TIPO_DADOS,
+    TIPO_TEXTO,
+    TIPO_VIDEO,
+    TIPO_IMAGEM,
+    TIPO_FIM_ARQUIVO,
+    TIPO_DIREITA,
+    TIPO_CIMA,
+    TIPO_BAIXO,
+    TIPO_ESQUERDA,
+    TIPO_ENCONTROU_TESOURO,
+    TIPO_ERRO
 };
 
 // Frame do protocolo
 typedef struct {
-    uint8_t marcador;            // 8 bits
-    uint8_t tamanho;             // 7 bits (use inteiro de 8 bits)
-    uint8_t sequencia;           // 5 bits (use inteiro de 8 bits)
-    uint8_t tipo;                // 4 bits (use inteiro de 8 bits)
-    uint8_t checksum;            // 8 bits
-    uint8_t dados[TAM_MAX_DADOS]; // até 127 bytes
-} Frame;
+    unsigned char marcador;      
+    unsigned char tamanho : 7;    
+    unsigned char sequencia : 5; 
+    unsigned char tipo : 4;      
+    unsigned char checksum;                   
+    unsigned char dados[TAM_MAX_DADOS];       
+} __attribute__((packed)) Frame;
 
-// Funções
-Frame empacotar(uint8_t tipo, uint8_t sequencia, uint8_t* dados, uint8_t tamanho);
+// Cria um frame válido com os dados passados por parâmetro
+Frame criar_frame(uint8_t tipo, uint8_t sequencia, uint8_t* dados, uint8_t tamanho);
 
-int desempacotar(Frame* f, const uint8_t* buffer, int buflen);
+// Transforma um frame em um vetor de dados
+// Retorno: para sucesso, tamanho do buffer. Para erro, -1.
+int serializar_frame(Frame* f, uint8_t* buffer, unsigned int tamanho_buffer);
 
-uint8_t calcularChecksum(const Frame* f);
+// Lê dados crus do buffer e preenche um frame. 
+// Retorno: 0 para sucesso, -1 para erro.
+int desserializar_frame(Frame* f, uint8_t* buffer, int tamanho_buffer);
+
+// Retorno: 1 se mensagem do buffer é válida no procolo, 0 se não é.
+int protocolo_eh_valido(unsigned char* buffer, int tamanho_buffer);
+
+// Calcula o checksum dos campos tamanho, sequencia, tipo e dados
+uint8_t calcular_checksum(Frame* f);
+
+// Envia o frame frame_envio no socket ctx_socket
+void enviar_frame(contexto_raw_socket ctx_socket, Frame frame_envio);
+
+// Retorno: numero de bytes lidos ou, se ocorrer timeout, -1
+int receber_mensagem(contexto_raw_socket ctx_socket, int timeoutMillis, unsigned char* buffer, int tamanho_buffer);
 
 #endif

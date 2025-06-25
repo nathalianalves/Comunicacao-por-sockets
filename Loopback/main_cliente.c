@@ -13,20 +13,23 @@ int main(int argc, char** argv) {
         return -1;
     }
     
-    int enviados, lidos;
-    contexto_raw_socket ctx_socket;
+    int lidos;
     Frame frame_envio, frame_recebimento, ultimo_frame_enviado;
-    unsigned char movimento, dados[TAM_MAX_DADOS], buffer_recebimento[sizeof(Frame)];
+    unsigned char buffer_recebimento[sizeof(Frame)];
     
     FILE *tesouro;
-    int pedir_movimento = 1;
-    int ultima_sequencia_recebida = -1;
     uint32_t tamanho_tesouro;
+    int num_tesouros_encontrados = 0;
     unsigned char nome_tesouro[TAM_MAX_DADOS];
     char *caminho_tesouros, caminho_completo_tesouro[TAM_MAX_DADOS];
+
+    unsigned char movimento;
+    int pedir_movimento = 1;
     int sequencia_esperada = 0;
 
-    ctx_socket = criar_raw_socket("veth0");
+    int jogo_acabou = 0;
+
+    contexto_raw_socket ctx_socket = criar_raw_socket("veth0");
     if (ctx_socket.socket_fd < 0) {
         perror("Erro ao criar raw socket");
         return 1;
@@ -34,19 +37,13 @@ int main(int argc, char** argv) {
 
     caminho_tesouros = argv[1];
     strncpy(caminho_completo_tesouro, caminho_tesouros, TAM_MAX_DADOS);
-    int num_tesouros_encontrados = 0;
-    int jogo_acabou = 0;
+    
     while (!jogo_acabou) {
         lidos = receber_mensagem(ctx_socket, TIMEOUT_MILI, buffer_recebimento, sizeof(buffer_recebimento));
         if (lidos == -1) {
-            frame_envio = criar_frame(TIPO_NACK, 0, 0, 0);
-            enviar_frame(ctx_socket, frame_envio);
-            ultimo_frame_enviado = frame_envio;
-        } 
-        if ((lidos > 0) && (protocolo_eh_valido(buffer_recebimento, sizeof(buffer_recebimento)))) {
+            enviar_frame(ctx_socket, ultimo_frame_enviado);
+        } else if ((lidos > 0) && (protocolo_eh_valido(buffer_recebimento, sizeof(buffer_recebimento)))) {
             if (desserializar_frame(&frame_recebimento, buffer_recebimento, lidos) == -1) {
-                printf("Enviando NACK\n");
-
                 frame_envio = criar_frame(TIPO_NACK, 0, 0, 0);
                 enviar_frame(ctx_socket, frame_envio);
                 ultimo_frame_enviado = frame_envio;
@@ -66,22 +63,22 @@ int main(int argc, char** argv) {
                             ultimo_frame_enviado = frame_envio;
                             break;                    
                     }
-                    printf("Recebi tipo ACK\n");
                     break;
 
                 case TIPO_NACK:
-                    printf("Recebi tipo NACK\n");
+                    enviar_frame(ctx_socket, ultimo_frame_enviado);
                     break;
 
                 case TIPO_OK_ACK:
-                    printf("Recebi tipo OK ACK\n");
                     pedir_movimento = 1;
 
+                    frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
+                    enviar_frame(ctx_socket, frame_envio);
+                    ultimo_frame_enviado = frame_envio;
+                    
                     break;
             
                 case TIPO_TABULEIRO:
-                    printf("Recebi tipo TABULEIRO\n");
-
                     imprimir_tabuleiro(frame_recebimento.dados);
 
                     if (pedir_movimento) {
@@ -103,10 +100,10 @@ int main(int argc, char** argv) {
                                 frame_envio = criar_frame(TIPO_DIREITA, 0, 0, 0);
                                 break;
                         }
-                    }
 
-                    enviar_frame(ctx_socket, frame_envio);
-                    ultimo_frame_enviado = frame_envio;
+                        enviar_frame(ctx_socket, frame_envio);
+                        ultimo_frame_enviado = frame_envio;
+                    }
 
                     frame_envio = criar_frame(TIPO_ACK, 0, NULL, 0);
                     enviar_frame(ctx_socket, frame_envio);
@@ -132,7 +129,6 @@ int main(int argc, char** argv) {
                     if (frame_recebimento.sequencia == sequencia_esperada) {
                         if (tesouro) {
                             fwrite(frame_recebimento.dados, 1, frame_recebimento.tamanho, tesouro);
-                            printf("Dados recebidos seq=%d\n", sequencia_esperada);
                         }
     
                         frame_envio = criar_frame(TIPO_ACK, sequencia_esperada, NULL, 0);
@@ -140,7 +136,6 @@ int main(int argc, char** argv) {
     
                         sequencia_esperada = 1 - sequencia_esperada;
     
-                        printf("ACK enviado para seq=%d\n", frame_envio.sequencia);
                     } else {
                         printf("PACOTE FORA DE ORDEM! Recebido %d, esperado %d\n",frame_recebimento.sequencia, sequencia_esperada);
     
@@ -151,14 +146,15 @@ int main(int argc, char** argv) {
                     break;
             
                 case TIPO_TEXTO:
+                case TIPO_IMAGEM:
+                case TIPO_VIDEO:
                     strncpy(caminho_completo_tesouro, caminho_tesouros, TAM_MAX_DADOS);
                     extrair_nome_arquivo(frame_recebimento, nome_tesouro);
                     gerar_caminho_completo(caminho_completo_tesouro, caminho_tesouros, (char*)nome_tesouro);
 
                     tesouro = fopen(caminho_completo_tesouro, "wb");
-                    printf("caminho completo eh %s\n", caminho_completo_tesouro);
                     if (!tesouro) {
-                        printf("[main_cliente] Erro em gerar arquivo para tesouro\n");
+                        printf("[main_cliente] Erro em gerar arquivo para tesouro (caminho_completo_tesouro: %s\n", caminho_completo_tesouro);
                         return -1;
                     }
 
@@ -170,16 +166,7 @@ int main(int argc, char** argv) {
                     
                     break;
             
-                case TIPO_VIDEO:
-                    printf("Recebi tipo VIDEO\n");
-                    break;
-            
-                case TIPO_IMAGEM:
-                    printf("Recebi tipo IMAGEM\n");
-                    break;
-            
                 case TIPO_FIM_ARQUIVO:
-                    printf("Recebi tipo FIM ARQUIVO. Enviando ACK para FIM_ARQUIVO\n");
                     pedir_movimento = 1;
                     frame_envio = criar_frame(TIPO_ACK, 0, NULL, 0);
                     enviar_frame(ctx_socket, frame_envio);
@@ -207,23 +194,16 @@ int main(int argc, char** argv) {
                     break;
             
                 case TIPO_DIREITA:
-                    printf("Recebi tipo DIREITA\n");
-                    break;
-            
                 case TIPO_CIMA:
-                    printf("Recebi tipo CIMA\n");
-                    break;
-            
-                case TIPO_BAIXO:
-                    printf("Recebi tipo BAIXO\n");
-                    break;
-            
+                case TIPO_BAIXO:        
                 case TIPO_ESQUERDA:
-                    printf("Recebi tipo ESQUERDA\n");
+                    frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
+                    enviar_frame(ctx_socket, frame_envio);
+                    ultimo_frame_enviado = frame_envio;
+    
                     break;
             
-                case TIPO_LIVRE2:
-                    printf("Recebi tipo LIVRE2\n");
+                case TIPO_ENCONTROU_TESOURO:
                     pedir_movimento = 0;
 
                     frame_envio = criar_frame(TIPO_ACK, 0, NULL, 0);
@@ -233,7 +213,10 @@ int main(int argc, char** argv) {
                     break;
             
                 case TIPO_ERRO:
-                    printf("Recebi tipo ERRO\n");
+                    frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
+                    enviar_frame(ctx_socket, frame_envio);
+                    ultimo_frame_enviado = frame_envio;
+
                     break;
             }
         }

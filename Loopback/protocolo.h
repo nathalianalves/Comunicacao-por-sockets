@@ -26,7 +26,7 @@ enum TipoMensagem {
     TIPO_CIMA,
     TIPO_BAIXO,
     TIPO_ESQUERDA,
-    TIPO_LIVRE2,
+    TIPO_ENCONTROU_TESOURO,
     TIPO_ERRO
 };
 

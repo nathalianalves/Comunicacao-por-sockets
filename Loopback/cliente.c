@@ -22,7 +22,7 @@ unsigned long long obter_espaco_disponivel(char *caminho) {
     struct statvfs svfs;
 
     if (statvfs(caminho, &svfs) != 0) {
-        perror(caminho);//"[obter_espaco_disponivel] Erro em statvfs %s=");
+        perror(caminho);
         return 0;
     }
 
@@ -31,19 +31,19 @@ unsigned long long obter_espaco_disponivel(char *caminho) {
 
 // A partir dos dados de frame, extrai o nome do arquivo 
 void extrair_nome_arquivo(Frame f, unsigned char* nome_arquivo) {
-    printf("Nome arquivo tem %d caracteres\n", (int)f.tamanho);
-
     for (int i = 0; i < (int)f.tamanho; i++) {
         nome_arquivo[i] = f.dados[i];
     }
 }
 
+// Concatena as strings, gerando o caminho completo de nome_arquivo
 void gerar_caminho_completo(char* caminho_completo, char* caminho_diretorio, char* nome_arquivo) {
     strcpy(caminho_completo, caminho_diretorio);
     strcat(caminho_completo, "/");
     strcat(caminho_completo, nome_arquivo);
 }
 
+// Retorna, em tamanho, o tamanho do frame f
 void processar_frame_tamanho(Frame* f, uint32_t* tamanho) {
     uint32_t tamanho_no_frame;
     memcpy(&tamanho_no_frame, f->dados, sizeof(tamanho_no_frame));
