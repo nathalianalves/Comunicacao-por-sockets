@@ -1,5 +1,0 @@
-Este é um arquivo de teste para envio em blocos de 127 bytes.
-O conteudo consiste em varias linhas, mas usando somente caracteres ASCII basicos (editado).
-Voce pode usar esse arquivo para verificar se a transferencia e escrita estao corretas.
-Cada caractere aqui tem codigo entre 0x20 e 0x7E, sem acentos ou simbolos fora desta faixa.
-O objetivo é que ele tenha tamanho MEDIO, sendo enviado em mais de um bloco.
