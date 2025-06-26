@@ -49,7 +49,7 @@ int main() {
         lidos = receber_mensagem(ctx_socket, TIMEOUT_MILI, buffer_recebimento, sizeof(buffer_recebimento));       
         if (lidos == -1) {
             enviar_frame(ctx_socket, ultimo_frame_enviado);
-        } else if ((lidos > 0) && (protocolo_eh_valido(buffer_recebimento, sizeof(buffer_recebimento)))) {
+        } else if (lidos > 0) {
             desserializar_frame(&frame_recebimento, buffer_recebimento, sizeof(buffer_recebimento));
             
             switch(frame_recebimento.tipo) {
@@ -65,9 +65,10 @@ int main() {
 
                         esperando_permissao_tabuleiro = 0;
 
-                    } else if (encontrou_tesouro) {   
+                    } else if (ultimo_frame_enviado.tipo == TIPO_ENCONTROU_TESOURO) {   
                         
                         num_tesouros_encontrados++;
+                        printf("criando frame tamanho do tesouro %d de nome %s\n", num_tesouros_encontrados, nome_tesouro_atual);
                         frame_envio = criar_frame_tamanho(num_tesouros_encontrados, caminho_tesouro_atual, &tamanho_tesouro_atual);
 
                         enviar_frame(ctx_socket, frame_envio);
@@ -204,7 +205,13 @@ int main() {
                         if (encontrou_tesouro) {
                             frame_envio = criar_frame(TIPO_ENCONTROU_TESOURO, 0, 0, 0);
                         } else {
-                            frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            zerar_dados(dados, sizeof(dados));
+                            esconder_tesouros(jogo, dados);
+
+                            frame_envio = criar_frame(TIPO_TABULEIRO, 0, dados, TAM_TABULEIRO*TAM_TABULEIRO);
+                            //enviar_frame(ctx_socket, frame_envio);
+                            //ultimo_frame_enviado = frame_envio;
+                            // frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
                         }   
                     } else {
                         frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
@@ -212,7 +219,7 @@ int main() {
 
                     enviar_frame(ctx_socket,frame_envio);
                     ultimo_frame_enviado = frame_envio;
-                    esperando_permissao_tabuleiro = 1;
+                    //esperando_permissao_tabuleiro = 1;
 
                     break;
             
@@ -223,7 +230,13 @@ int main() {
                         if (encontrou_tesouro) {
                             frame_envio = criar_frame(TIPO_ENCONTROU_TESOURO, 0, 0, 0);
                         } else {
-                            frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            //frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            zerar_dados(dados, sizeof(dados));
+                            esconder_tesouros(jogo, dados);
+
+                            frame_envio = criar_frame(TIPO_TABULEIRO, 0, dados, TAM_TABULEIRO*TAM_TABULEIRO);
+                            //enviar_frame(ctx_socket, frame_envio);
+                            //ultimo_frame_enviado = frame_envio;
                         }   
                     } else {
                         frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
@@ -231,7 +244,7 @@ int main() {
                     
                     enviar_frame(ctx_socket,frame_envio);
                     ultimo_frame_enviado = frame_envio;
-                    esperando_permissao_tabuleiro = 1;
+                    //esperando_permissao_tabuleiro = 1;
                                         
                     break;
             
@@ -242,7 +255,13 @@ int main() {
                         if (encontrou_tesouro) {
                             frame_envio = criar_frame(TIPO_ENCONTROU_TESOURO, 0, 0, 0);
                         } else {
-                            frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            // frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            zerar_dados(dados, sizeof(dados));
+                            esconder_tesouros(jogo, dados);
+
+                            frame_envio = criar_frame(TIPO_TABULEIRO, 0, dados, TAM_TABULEIRO*TAM_TABULEIRO);
+                            // enviar_frame(ctx_socket, frame_envio);
+                            //ultimo_frame_enviado = frame_envio;
                         }
                     } else {
                         frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
@@ -251,7 +270,7 @@ int main() {
 
                     enviar_frame(ctx_socket,frame_envio);
                     ultimo_frame_enviado = frame_envio;
-                    esperando_permissao_tabuleiro = 1;
+                    // esperando_permissao_tabuleiro = 1;
 
                     break;
             
@@ -262,13 +281,19 @@ int main() {
                         if (encontrou_tesouro) {
                             frame_envio = criar_frame(TIPO_ENCONTROU_TESOURO, 0, 0, 0);
                         } else {
-                            frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            //frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            zerar_dados(dados, sizeof(dados));
+                            esconder_tesouros(jogo, dados);
+
+                            frame_envio = criar_frame(TIPO_TABULEIRO, 0, dados, TAM_TABULEIRO*TAM_TABULEIRO);
+                            //enviar_frame(ctx_socket, frame_envio);
+                            //ultimo_frame_enviado = frame_envio;
                         }
                     } else {
                         frame_envio = criar_frame(TIPO_ACK, 0, 0, 0);
                     }
                     
-                    esperando_permissao_tabuleiro = 1;
+                    //esperando_permissao_tabuleiro = 1;
                     enviar_frame(ctx_socket,frame_envio);
                     ultimo_frame_enviado = frame_envio;
 
@@ -282,6 +307,8 @@ int main() {
                     break;
             }     
         }
+
+        // while (getchar() != '\n');
 
         imprimir_tabuleiro(jogo->tabuleiro);
     }

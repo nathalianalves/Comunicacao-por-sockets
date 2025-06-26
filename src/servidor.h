@@ -8,7 +8,7 @@
 #include "protocolo.h"
 
 #define TESOURO_1 "objetos/1.mp4"
-#define TESOURO_2 "objetos/2.txt"
+#define TESOURO_2 "objetos/2.mp4"
 #define TESOURO_3 "objetos/3.txt"
 #define TESOURO_4 "objetos/4.jpg"
 #define TESOURO_5 "objetos/5.txt"

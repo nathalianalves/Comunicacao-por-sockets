@@ -12,7 +12,10 @@ int main(int argc, char** argv) {
         printf("Uso: sudo ./cliente <diretório em que os tesouros serão salvos>\n");
         return -1;
     }
-    
+
+    uint8_t tabuleiro[TAM_TABULEIRO*TAM_TABULEIRO];
+    int encontrei_tesouro = 0;
+
     int lidos;
     Frame frame_envio, frame_recebimento, ultimo_frame_enviado;
     unsigned char buffer_recebimento[sizeof(Frame)];
@@ -42,7 +45,7 @@ int main(int argc, char** argv) {
         lidos = receber_mensagem(ctx_socket, TIMEOUT_MILI, buffer_recebimento, sizeof(buffer_recebimento));
         if (lidos == -1) {
             enviar_frame(ctx_socket, ultimo_frame_enviado);
-        } else if ((lidos > 0) && (protocolo_eh_valido(buffer_recebimento, sizeof(buffer_recebimento)))) {
+        } else if (lidos > 0) {
             if (desserializar_frame(&frame_recebimento, buffer_recebimento, lidos) == -1) {
                 frame_envio = criar_frame(TIPO_NACK, 0, 0, 0);
                 enviar_frame(ctx_socket, frame_envio);
@@ -54,13 +57,15 @@ int main(int argc, char** argv) {
             switch(frame_recebimento.tipo) {
                 case TIPO_ACK:
                     switch (ultimo_frame_enviado.tipo) {
+                        // DESENHAR TABULEIRO E PEDIR MOVIMENTO
                         case TIPO_DIREITA:
                         case TIPO_CIMA:
                         case TIPO_BAIXO:
                         case TIPO_ESQUERDA:
-                            frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
-                            enviar_frame(ctx_socket, frame_envio);
-                            ultimo_frame_enviado = frame_envio;
+                            pedir_movimento = 1;
+                            //frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
+                            //enviar_frame(ctx_socket, frame_envio);
+                            //ultimo_frame_enviado = frame_envio;
                             break;                    
                     }
                     break;
@@ -79,35 +84,41 @@ int main(int argc, char** argv) {
                     break;
             
                 case TIPO_TABULEIRO:
-                    imprimir_tabuleiro(frame_recebimento.dados);
 
-                    if (pedir_movimento) {
+                    frame_envio = criar_frame(TIPO_ACK, 0, NULL, 0);
+                    enviar_frame(ctx_socket, frame_envio);
+                    ultimo_frame_enviado = frame_envio;
+
+                    memcpy(tabuleiro, frame_recebimento.dados, TAM_TABULEIRO*TAM_TABULEIRO);
+                    imprimir_tabuleiro(tabuleiro);
+                    if (!encontrei_tesouro) {
                         movimento = ler_tecla_valida();
                         switch(movimento) {
                             case 'w':
                                 frame_envio = criar_frame(TIPO_CIMA, 0, 0, 0);
                                 break;
-
+                        
                             case 'a':
                                 frame_envio = criar_frame(TIPO_ESQUERDA, 0, 0, 0);
                                 break;
-
+                        
                             case 's':
                                 frame_envio = criar_frame(TIPO_BAIXO, 0, 0, 0);
                                 break;
-                        
+
                             case 'd':
                                 frame_envio = criar_frame(TIPO_DIREITA, 0, 0, 0);
                                 break;
+
                         }
 
                         enviar_frame(ctx_socket, frame_envio);
                         ultimo_frame_enviado = frame_envio;
+                        pedir_movimento = 0;
+                    } else {
+                        encontrei_tesouro = 0;
                     }
-
-                    frame_envio = criar_frame(TIPO_ACK, 0, NULL, 0);
-                    enviar_frame(ctx_socket, frame_envio);
-                    ultimo_frame_enviado = frame_envio;
+                    //memcpy(tabuleiro, frame_recebimento.dados, TAM_TABULEIRO*TAM_TABULEIRO);
 
                     break;
 
@@ -204,7 +215,7 @@ int main(int argc, char** argv) {
                     break;
             
                 case TIPO_ENCONTROU_TESOURO:
-                    pedir_movimento = 0;
+                    encontrei_tesouro = 1;
 
                     frame_envio = criar_frame(TIPO_ACK, 0, NULL, 0);
                     enviar_frame(ctx_socket, frame_envio);

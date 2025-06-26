@@ -2,7 +2,7 @@
 
 // Imprime o tabuleiro do jogo
 void imprimir_tabuleiro(uint8_t* tabuleiro) {
-    system("clear");
+    //system("clear");
     
     printf("____________________________________\n");
     for (int i = TAM_TABULEIRO - 1; i >= 0; i--) {

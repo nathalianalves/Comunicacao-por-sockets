@@ -103,12 +103,21 @@ uint8_t calcular_checksum(Frame* f) {
 
 // Envia o frame frame_envio no socket ctx_socket
 void enviar_frame(contexto_raw_socket ctx_socket, Frame frame_envio) {
-    int enviados;
+    int enviados, tamanho;
     unsigned char buffer[sizeof(Frame)];
 
-    serializar_frame(&frame_envio, buffer, sizeof(buffer));
+    tamanho = serializar_frame(&frame_envio, buffer, sizeof(buffer));
+    if (tamanho < 14) {
+        tamanho = 14;
+    }
 
-    enviados = send(ctx_socket.socket_fd, buffer, sizeof(buffer), 0);
+    printf("Enviando buffer: \n");
+    printf("\tTipo: %d\n", frame_envio.tipo);
+    for (int i = 0; i < tamanho; i++) {
+        printf("\tbuffer[%d] = %d\n", i, buffer[i]);
+    }
+
+    enviados = send(ctx_socket.socket_fd, buffer, tamanho, 0);
     if (enviados == -1) {
         perror("[enviar_frame] Erro no envio.\n");
         exit(-1);
@@ -124,6 +133,10 @@ int receber_mensagem(contexto_raw_socket ctx_socket, int timeoutMillis, unsigned
     do {
         bytes_lidos = recv(ctx_socket.socket_fd, buffer, tamanho_buffer, 0);
         if (protocolo_eh_valido(buffer, bytes_lidos)) { 
+            printf("Recebendo buffer: \n");
+            for (int i = 0; i < bytes_lidos; i++) {
+                printf("buffer[%d] = %d\n", i, buffer[i]);
+            }
             return bytes_lidos; 
         }
     } while (timestamp() - comeco <= timeoutMillis);
