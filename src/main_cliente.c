@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#include "timestamp.h"
 #include "protocolo.h"
 #include "sockets.h"
 #include "cliente.h"
@@ -15,6 +16,10 @@ int main(int argc, char** argv) {
 
     uint8_t tabuleiro[TAM_TABULEIRO*TAM_TABULEIRO];
     int encontrei_tesouro = 0;
+
+    long long tempo_antes_movimento = 0;    
+    long long tempo_depois_movimento = 0;
+    long long num_timeouts = 0;
 
     int lidos;
     Frame frame_envio, frame_recebimento, ultimo_frame_enviado;
@@ -42,7 +47,13 @@ int main(int argc, char** argv) {
     strncpy(caminho_completo_tesouro, caminho_tesouros, TAM_MAX_DADOS);
     
     while (!jogo_acabou) {
-        lidos = receber_mensagem(ctx_socket, TIMEOUT_MILI, buffer_recebimento, sizeof(buffer_recebimento));
+        num_timeouts = (tempo_depois_movimento - tempo_antes_movimento) / TIMEOUT_MILI;
+        int i = 0;
+        while (i <= num_timeouts) {
+            lidos = receber_mensagem(ctx_socket, TIMEOUT_MILI, buffer_recebimento, sizeof(buffer_recebimento));
+            i++;
+        }        
+        
         if (lidos == -1) {
             enviar_frame(ctx_socket, ultimo_frame_enviado);
         } else if (lidos > 0) {
@@ -57,15 +68,34 @@ int main(int argc, char** argv) {
             switch(frame_recebimento.tipo) {
                 case TIPO_ACK:
                     switch (ultimo_frame_enviado.tipo) {
-                        // DESENHAR TABULEIRO E PEDIR MOVIMENTO
                         case TIPO_DIREITA:
                         case TIPO_CIMA:
                         case TIPO_BAIXO:
                         case TIPO_ESQUERDA:
-                            pedir_movimento = 1;
-                            //frame_envio = criar_frame(TIPO_OK_ACK, 0, 0, 0);
-                            //enviar_frame(ctx_socket, frame_envio);
-                            //ultimo_frame_enviado = frame_envio;
+                            imprimir_tabuleiro(tabuleiro);
+                            movimento = ler_tecla_valida();
+                            switch(movimento) {
+                                case 'w':
+                                    frame_envio = criar_frame(TIPO_CIMA, 0, 0, 0);
+                                    break;
+                            
+                                case 'a':
+                                    frame_envio = criar_frame(TIPO_ESQUERDA, 0, 0, 0);
+                                    break;
+                            
+                                case 's':
+                                    frame_envio = criar_frame(TIPO_BAIXO, 0, 0, 0);
+                                    break;
+
+                                case 'd':
+                                    frame_envio = criar_frame(TIPO_DIREITA, 0, 0, 0);
+                                    break;
+
+                            }
+
+                            enviar_frame(ctx_socket, frame_envio);
+                            ultimo_frame_enviado = frame_envio;
+
                             break;                    
                     }
                     break;
@@ -92,7 +122,9 @@ int main(int argc, char** argv) {
                     memcpy(tabuleiro, frame_recebimento.dados, TAM_TABULEIRO*TAM_TABULEIRO);
                     imprimir_tabuleiro(tabuleiro);
                     if (!encontrei_tesouro) {
+                        tempo_antes_movimento = timestamp();
                         movimento = ler_tecla_valida();
+                        tempo_depois_movimento = timestamp();
                         switch(movimento) {
                             case 'w':
                                 frame_envio = criar_frame(TIPO_CIMA, 0, 0, 0);
@@ -118,7 +150,6 @@ int main(int argc, char** argv) {
                     } else {
                         encontrei_tesouro = 0;
                     }
-                    //memcpy(tabuleiro, frame_recebimento.dados, TAM_TABULEIRO*TAM_TABULEIRO);
 
                     break;
 

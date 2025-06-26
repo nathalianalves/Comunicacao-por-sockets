@@ -68,7 +68,6 @@ int main() {
                     } else if (ultimo_frame_enviado.tipo == TIPO_ENCONTROU_TESOURO) {   
                         
                         num_tesouros_encontrados++;
-                        printf("criando frame tamanho do tesouro %d de nome %s\n", num_tesouros_encontrados, nome_tesouro_atual);
                         frame_envio = criar_frame_tamanho(num_tesouros_encontrados, caminho_tesouro_atual, &tamanho_tesouro_atual);
 
                         enviar_frame(ctx_socket, frame_envio);

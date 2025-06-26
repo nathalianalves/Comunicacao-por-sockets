@@ -1,6 +1,6 @@
 #include "timestamp.h"
 
-// usando long long pra (tentar) sobreviver ao ano 2038
+// usando long long pra (tentar) sobreviver aoano  2038
 long long timestamp() {
     struct timeval tp;
     gettimeofday(&tp, NULL);
